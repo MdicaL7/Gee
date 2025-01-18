@@ -1,6 +1,7 @@
 package gee
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 )
@@ -37,6 +38,11 @@ func parsePattern(pattern string) []string {
 }
 
 func (r *router) addRoute(method string, pattern string, handler HandlerFunc) {
+	// 检查路由冲突,如果已经存在该路由，则直接panic
+	// 例如，如果已经存在 GET - /hello/:name 这个路由规则，再添加 GET - /hello/geektutu 这个路由规则，就会触发 panic。
+	if _, existing := r.getRoute(method, pattern); existing != nil {
+		panic(fmt.Sprintf("route conflict: %s %s", method, pattern))
+	}
 	parts := parsePattern(pattern)
 	key := method + "-" + pattern
 	// 如果不存在该请求方式的路由树，则新建一个
