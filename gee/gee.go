@@ -2,14 +2,16 @@ package gee
 
 import (
 	"net/http"
+	"strings"
 )
 
 // HandlerFunc 定义 gee 使用的请求处理程序
 type HandlerFunc func(c *Context)
 
 type RouterGroup struct {
-	prefix string  //路由组前缀
-	engine *Engine //所有的group共享一个engine实例
+	prefix      string        //路由组前缀
+	middlewares []HandlerFunc //中间件
+	engine      *Engine       //所有的group共享一个engine实例
 }
 
 // Engine 实现handler接口方法ServerHTTP
@@ -51,6 +53,10 @@ func (group *RouterGroup) POST(pattern string, handler HandlerFunc) {
 	group.addRoute("POST", pattern, handler)
 }
 
+func (group *RouterGroup) Use(middlewares ...HandlerFunc) {
+	group.middlewares = append(group.middlewares, middlewares...)
+}
+
 func (engine *Engine) addRoute(method string, pattern string, handler HandlerFunc) {
 	engine.router.addRoute(method, pattern, handler)
 }
@@ -72,6 +78,13 @@ func (engine *Engine) Run(addr string) (err error) {
 
 // 实现的handle接口中ServeHTTP方法
 func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	var middlewares []HandlerFunc
+	for _, group := range engine.groups {
+		if strings.HasPrefix(req.URL.Path, group.prefix) {
+			middlewares = append(middlewares, group.middlewares...)
+		}
+	}
 	c := newContext(w, req)
+	c.handlers = middlewares
 	engine.router.handle(c)
 }
