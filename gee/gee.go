@@ -8,9 +8,8 @@ import (
 type HandlerFunc func(c *Context)
 
 type RouterGroup struct {
-	prefix string       //路由组前缀
-	parent *RouterGroup //支持嵌套
-	engine *Engine      //所有的group共享一个engine实例
+	prefix string  //路由组前缀
+	engine *Engine //所有的group共享一个engine实例
 }
 
 // Engine 实现handler接口方法ServerHTTP
@@ -33,7 +32,6 @@ func (group *RouterGroup) Group(prefix string) *RouterGroup {
 	engine := group.engine
 	newGroup := &RouterGroup{
 		prefix: group.prefix + prefix,
-		parent: group,
 		engine: engine,
 	}
 	engine.groups = append(engine.groups, newGroup)
